@@ -1,4 +1,10 @@
 #include "systemcalls.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <fcntl.h>
+#include <sys/types.h>
+#include <sys/wait.h>
 
 /**
  * @param cmd the command to execute with system()
@@ -9,15 +15,21 @@
 */
 bool do_system(const char *cmd)
 {
+    /*
+    * TODO  add your code here
+    *  Call the system() function with the command set in the cmd
+    *   and return a boolean true if the system() call completed with success
+    *   or false() if it returned a failure
+    */
+    int sysreturn = system(cmd);
+    if ( sysreturn== 0){
+        return true;
+    }
 
-/*
- * TODO  add your code here
- *  Call the system() function with the command set in the cmd
- *   and return a boolean true if the system() call completed with success
- *   or false() if it returned a failure
-*/
+    return false;
 
-    return true;
+
+    
 }
 
 /**
@@ -39,10 +51,12 @@ bool do_exec(int count, ...)
     va_list args;
     va_start(args, count);
     char * command[count+1];
+    //Note VA start is from first arg not countttttt
     int i;
     for(i=0; i<count; i++)
     {
         command[i] = va_arg(args, char *);
+
     }
     command[count] = NULL;
     // this line is to avoid a compile warning before your implementation is complete
@@ -60,8 +74,40 @@ bool do_exec(int count, ...)
 */
 
     va_end(args);
+    
+    
+    
+    __pid_t childPID= fork() ;
+    if (childPID<0){
+        //fork failed so lets return false and exit 
+        exit(EXIT_FAILURE);
+    }
+    if (childPID ==0){
+        //CHILD
+        
+        execv(command[0],command);
+       //execv returned so it failed 
+       
+        exit(EXIT_FAILURE);
+    }else{
+        //PARENT
 
-    return true;
+        int status;
+        waitpid(childPID,&status,0);
+       
+        if (WEXITSTATUS(status)==0){
+       
+            return true;
+        }else{
+          
+            return false;
+        }   
+
+    }
+    
+   
+    
+    
 }
 
 /**
@@ -78,6 +124,7 @@ bool do_exec_redirect(const char *outputfile, int count, ...)
     for(i=0; i<count; i++)
     {
         command[i] = va_arg(args, char *);
+        printf("command %s \n",command[i]);
     }
     command[count] = NULL;
     // this line is to avoid a compile warning before your implementation is complete
@@ -94,6 +141,42 @@ bool do_exec_redirect(const char *outputfile, int count, ...)
 */
 
     va_end(args);
+    int fd = open(outputfile,O_WRONLY|O_TRUNC|O_CREAT, 0644);
+    if (fd<0){
+        return false;
+    }
+    __pid_t childPID= fork() ;
+    if (childPID<0){
+        //fork failed so lets return false and exit 
+        exit(EXIT_FAILURE);
+    }
+    if (childPID ==0){
+        //CHILD
+        if (dup2(fd,1)<0){
+            exit(EXIT_FAILURE);
+        }
+        close(fd);
+        
+        execv(command[0],command);
+       //execv returned so it failed 
+       
+        exit(EXIT_FAILURE);
+    }else{
+        //PARENT
+
+        int status;
+        waitpid(childPID,&status,0);
+       
+        if (WEXITSTATUS(status)==0){
+       
+            return true;
+        }else{
+          
+            return false;
+        }   
+
+    }
+    
 
     return true;
 }
