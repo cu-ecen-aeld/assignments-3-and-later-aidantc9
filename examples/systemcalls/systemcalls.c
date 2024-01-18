@@ -124,7 +124,7 @@ bool do_exec_redirect(const char *outputfile, int count, ...)
     for(i=0; i<count; i++)
     {
         command[i] = va_arg(args, char *);
-        printf("command %s \n",command[i]);
+       
     }
     command[count] = NULL;
     // this line is to avoid a compile warning before your implementation is complete
